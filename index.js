@@ -1,87 +1,89 @@
 require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
-const fs = require('fs').promises;
+const { MongoClient } = require('mongodb');
 const jwt = require('jsonwebtoken');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const USERS_FILE_PATH = 'users.json';
+const MONGODB_URI = process.env.MONGODB_URI 
 const JWT_SECRET = process.env.JWT_SECRET_KEY || 'your_secret_key';
 
-// Middleware
+
 app.use(bodyParser.json());
 
-// Initialize users array
-let users = [];
-
-// Read users data from file on server start
-(async () => {
+// Connect to MongoDB
+async function connectToMongoDB() {
+  console.log('Connecting...');
   try {
-    const data = await fs.readFile(USERS_FILE_PATH);
-    users = JSON.parse(data);
+    const client = new MongoClient(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
+    await client.connect();
+    console.log('Connected to MongoDB');
+    return client.db();
   } catch (error) {
-    if (error.code === 'ENOENT') {
-      await fs.writeFile(USERS_FILE_PATH, '[]');
-    } else {
-      console.error('Error reading users data:', error);
-    }
+    console.error('Error connecting to MongoDB:', error);
+    throw error;
   }
-})();
-
-// Save users data to file
-async function saveUsersToFile() {
-  try {
-    await fs.writeFile(USERS_FILE_PATH, JSON.stringify(users, null, 2));
-  } catch (error) {
-    console.error('Error saving users data:', error);
-  }
-}
-
-// Generate JWT token
-function generateToken(email) {
-  return jwt.sign({ email }, JWT_SECRET, { expiresIn: '1h' });
 }
 
 // Routes
-app.post('/register', (req, res) => {
+app.post('/register', async (req, res) => {
   const { email, password } = req.body;
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
-    return res.status(400).json({ error: 'Invalid email format' });
+  try {
+    const db = app.locals.db;
+    const usersCollection = db.collection('users');
+
+    // Check if email is already registered
+    const existingUser = await usersCollection.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ error: 'Email already registered' });
+    }
+
+    // Create a new user
+    await usersCollection.insertOne({ email, password });
+    res.status(201).json({ message: 'User registered successfully' });
+  } catch (error) {
+    console.error('Error registering user:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
-
-  if (password.length < 8) {
-    return res.status(400).json({ error: 'Password must be at least 8 characters long' });
-  }
-
-  const existingUser = users.find(user => user.email === email);
-  if (existingUser) {
-    return res.status(400).json({ error: 'Email already registered' });
-  }
-
-  const newUser = { email, password };
-  users.push(newUser);
-  saveUsersToFile();
-
-  res.status(201).json({ message: 'User registered successfully' });
 });
 
-app.post('/login', (req, res) => {
+app.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
-  const user = users.find(user => user.email === email);
-  if (!user || user.password !== password) {
-    return res.status(401).json({ error: 'Invalid credentials' });
+  try {
+    const db = app.locals.db;
+    const usersCollection = db.collection('users');
+
+    // Find user by email
+    const user = await usersCollection.findOne({ email });
+    if (!user || user.password !== password) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    // Generate JWT token
+    const token = jwt.sign({ email }, JWT_SECRET, { expiresIn: '1h' });
+
+    res.status(200).json({ message: 'Login successful', token });
+  } catch (error) {
+    console.error('Error logging in user:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
-
-  const token = generateToken(email);
-
-  res.status(200).json({ message: 'Login successful', token });
 });
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+async function startServer() {
+  try {
+    const db = await connectToMongoDB();
+    app.locals.db = db;
+    app.listen(PORT, () => {
+      console.log(`Server is running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+}
+
+startServer();
