@@ -6,15 +6,14 @@ const jwt = require('jsonwebtoken');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const MONGODB_URI = process.env.MONGODB_URI 
+const MONGODB_URI = process.env.MONGODB_URI;
 const JWT_SECRET = process.env.JWT_SECRET_KEY || 'your_secret_key';
-
 
 app.use(bodyParser.json());
 
 // Connect to MongoDB
 async function connectToMongoDB() {
-  console.log('Connecting...');
+  console.log('Connecting to MongoDB...');
   try {
     const client = new MongoClient(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
     await client.connect();
@@ -87,3 +86,5 @@ async function startServer() {
 }
 
 startServer();
+
+module.exports = app;
