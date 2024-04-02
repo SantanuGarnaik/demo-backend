@@ -7,7 +7,7 @@ const jwt = require('jsonwebtoken');
 const app = express();
 let PORT = process.env.PORT || 3000;
 const USERS_FILE_PATH = 'users.json';
-const JWT_SECRET = 'your_secret_key'; // Change this to a strong secret key
+const JWT_SECRET = process.env.JWT_SECRET_KEY || 'your_secret_key'; // Change this to a strong secret key
 
 // Middleware
 app.use(bodyParser.json());
