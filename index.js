@@ -24,6 +24,7 @@ try {
 
 // Define a schema for the user collection
 const userSchema = new mongoose.Schema({
+  fullName: String,
   email: String,
   password: String
 });
@@ -33,7 +34,7 @@ const User = mongoose.model('User', userSchema);
 
 // Routes
 app.post('/register', async (req, res) => {
-  const { email, password } = req.body;
+  const { fullName, email, password } = req.body;
 
   try {
     // Check if email is already registered
@@ -43,7 +44,7 @@ app.post('/register', async (req, res) => {
     }
 
     // Create a new user
-    await User.create({ email, password });
+    await User.create({ fullName, email, password });
     res.status(201).json({ message: 'User registered successfully' });
   } catch (error) {
     console.error('Error registering user:', error);
@@ -70,6 +71,104 @@ app.post('/login', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+// Logout route
+app.post('/logout', (req, res) => {
+  // Here you may want to handle any logout logic, such as invalidating the JWT token.
+  // For simplicity, let's just send a success response.
+ 
+  res.status(200).json({ message: 'Logout successful' });
+});
+
+// Get user details route
+app.get('/user', (req, res) => {
+  const token = req.headers.authorization;
+
+  if (!token) {
+    return res.status(401).json({ error: 'Token not provided' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const userEmail = decoded.email;
+    
+    // Find user by email
+    User.findOne({ email: userEmail }, { password: 0 }, (err, user) => {
+      if (err) {
+        console.error('Error retrieving user details:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+      }
+      
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      
+      res.status(200).json(user);
+    });
+  } catch (error) {
+    console.error('Error verifying token:', error);
+    res.status(401).json({ error: 'Invalid token' });
+  }
+});
+
+// Edit user details route
+app.put('/user', async (req, res) => {
+  const token = req.headers.authorization;
+  const { fullName, email, password } = req.body;
+
+  if (!token) {
+    return res.status(401).json({ error: 'Token not provided' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const userEmail = decoded.email;
+
+    // Find user by email
+    const user = await User.findOne({ email: userEmail });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Update user details
+    user.fullName = fullName || user.fullName;
+    user.email = email || user.email;
+    user.password = password || user.password;
+
+    await user.save();
+
+    res.status(200).json({ message: 'User details updated successfully' });
+  } catch (error) {
+    console.error('Error updating user details:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Delete user account route
+app.delete('/user', async (req, res) => {
+  const token = req.headers.authorization;
+
+  if (!token) {
+    return res.status(401).json({ error: 'Token not provided' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const userEmail = decoded.email;
+
+    // Find user by email and delete
+    const deletedUser = await User.findOneAndDelete({ email: userEmail });
+    if (!deletedUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.status(200).json({ message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 
 // Start server
 app.listen(PORT, () => {
