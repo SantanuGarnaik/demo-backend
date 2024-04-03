@@ -113,7 +113,7 @@ app.get("/user", (req, res) => {
   } catch (error) {
     // If the error is a JsonWebTokenError, indicating an invalid token
     if (error.name === "JsonWebTokenError") {
-      return res.status(401).json({ error: "Invalid token" });
+      return res.status(401).json({ error: "Invalid token",token });
     }
 
     console.error("Error verifying token:", error);
