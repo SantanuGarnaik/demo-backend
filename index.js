@@ -23,11 +23,14 @@ try {
 }
 
 // Define a schema for the user collection
-const userSchema = new mongoose.Schema({
-  fullName: String,
-  email: String,
-  password: String,
-}, { timestamps: true });
+const userSchema = new mongoose.Schema(
+  {
+    fullName: String,
+    email: String,
+    password: String,
+  },
+  { timestamps: true }
+);
 
 // Create a Mongoose model for the user collection
 const User = mongoose.model("User", userSchema);
@@ -158,7 +161,8 @@ app.put("/user", async (req, res) => {
 
 // Delete user account route
 app.delete("/user", async (req, res) => {
-  const token = req.headers.authorization;
+  const authorizationHeader = req.headers.authorization;
+  const token = authorizationHeader.split(" ")[1];
 
   if (!token) {
     return res.status(401).json({ error: "Token not provided" });
