@@ -27,7 +27,7 @@ const userSchema = new mongoose.Schema({
   fullName: String,
   email: String,
   password: String,
-});
+}, { timestamps: true });
 
 // Create a Mongoose model for the user collection
 const User = mongoose.model("User", userSchema);
