@@ -83,15 +83,15 @@ app.post("/logout", (req, res) => {
 // Get user details route
 // Get user details route
 // Get user details route
-app.get('/user', async (req, res) => {
+app.get("/user", async (req, res) => {
   const authorizationHeader = req.headers.authorization;
 
   if (!authorizationHeader) {
-    return res.status(401).json({ error: 'Token not provided' });
+    return res.status(401).json({ error: "Token not provided" });
   }
 
   // Extract token from Authorization header (remove 'Bearer ' prefix)
-  const token = authorizationHeader.split(' ')[1];
+  const token = authorizationHeader.split(" ")[1];
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
@@ -99,32 +99,33 @@ app.get('/user', async (req, res) => {
 
     // If decoded object is null or undefined, indicating an invalid token
     if (!decoded) {
-      return res.status(401).json({ error: 'Invalid token' });
+      return res.status(401).json({ error: "Invalid token" });
     }
 
     // Find user by email
     const user = await User.findOne({ email: userEmail }, { password: 0 });
-    
+
     if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ error: "User not found" });
     }
 
     res.status(200).json(user);
   } catch (error) {
     // If the error is a JsonWebTokenError, indicating an invalid token
-    if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({ error: 'Invalid token' });
+    if (error.name === "JsonWebTokenError") {
+      return res.status(401).json({ error: "Invalid token" });
     }
 
-    console.error('Error verifying token:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Error verifying token:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
-
 // Edit user details route
 app.put("/user", async (req, res) => {
-  const token = req.headers.authorization;
+  const authorizationHeader = req.headers.authorization;
+  const token = authorizationHeader.split(" ")[1];
+
   const { fullName, email, password } = req.body;
 
   if (!token) {
