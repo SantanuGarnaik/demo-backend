@@ -82,7 +82,8 @@ app.post("/logout", (req, res) => {
 
 // Get user details route
 // Get user details route
-app.get('/user', (req, res) => {
+// Get user details route
+app.get('/user', async (req, res) => {
   const authorizationHeader = req.headers.authorization;
 
   if (!authorizationHeader) {
@@ -102,18 +103,13 @@ app.get('/user', (req, res) => {
     }
 
     // Find user by email
-    User.findOne({ email: userEmail }, { password: 0 }, (err, user) => {
-      if (err) {
-        console.error('Error retrieving user details:', err);
-        return res.status(500).json({ error: 'Internal server error' });
-      }
-      
-      if (!user) {
-        return res.status(404).json({ error: 'User not found' });
-      }
-      
-      res.status(200).json(user);
-    });
+    const user = await User.findOne({ email: userEmail }, { password: 0 });
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.status(200).json(user);
   } catch (error) {
     // If the error is a JsonWebTokenError, indicating an invalid token
     if (error.name === 'JsonWebTokenError') {
