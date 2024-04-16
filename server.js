@@ -28,6 +28,10 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // Routes
+app.get('/api/test', (req, res) => {
+  res.status(200).json({ message: 'Server is running and endpoint is accessible' });
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/users', userRoutes);
