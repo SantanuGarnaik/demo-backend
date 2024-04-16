@@ -5,8 +5,7 @@ import cors from 'cors';
 import authRoutes from './routes/authRoute.js';
 import postRoutes from './routes/postRoute.js';
 import userRoutes from './routes/userRoute.js';
-import multer from 'multer';
-import path from 'path';
+
 
 dotenv.config();
 
@@ -16,16 +15,6 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors()); // Enable CORS
-
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, 'uploads'));
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + path.extname(file.originalname));
-  },
-});
-const upload = multer({ storage });
 
 // Routes
 app.get('/api/test', (req, res) => {
